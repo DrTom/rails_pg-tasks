@@ -1,0 +1,61 @@
+PostgreSQL Tasks and Functions for Ruby on Rails
+================================================
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'pg_tasks', '>= 1.0.0', '< 2.0.0'
+```
+
+## Usage
+
+### Rake Tasks
+
+The following rake tasks are available: 
+
+```shell
+rake db:pg:truncate_tables
+rake db:pg:data:dump FILE=...
+rake db:pg:data:restore FILE=...
+rake db:pg:structure_and_data:dump FILE=...
+rake db:pg:structure_and_data:restore FILE=...
+```
+
+The meaning should be clear from the names.
+
+The FILE environment variable is optional. There are defaults.
+
+### Access from Ruby Code
+
+```ruby
+PgTasks.truncate_tables()
+PgTasks.data_dump(filename = nil)
+PgTasks.data_restore(filename = nil)
+PgTasks.structure_and_data_dump(filename = nil)
+PgTasks.structure_and_data_restore(filename = nil)
+```
+
+## Internals and Caveats 
+
+This library uses and extends `ActiveRecord::Tasks::DatabaseTasks` as
+well as `ActiveRecord::Tasks::PostgreSQLDatabaseTasks`.
+
+The dump and restore tasks communicate with Postgresql via the system
+binaries `pg_dump` and `pg_restore` (in the same way as some of the
+original rails tasks do). `truncate_tables` uses
+`ActiveRecord::Base.connection`.
+
+Restoring a complete database doesn't play well if there are open
+connections. There will be warnings if there are conflicts during
+restore. The restore continues however.
+
+`data_dump` might warn you about circular dependencies. Never mind,
+`restore` disables the triggers temporarily. The role for restore
+requieres permissions to disable triggers temporarily.
+
+`data_dump` as well as `truncate_tables` leaves the `schema_migrations`
+table alone. This is the desired behavior for a library designed to
+interact with *ruby on rails* respectively *active record*.
+
