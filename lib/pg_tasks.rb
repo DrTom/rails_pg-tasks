@@ -1,3 +1,11 @@
+#--
+# Copyright (c) 2015 Thomas Schank
+#
+# Released to the public under the terms of the MIT license. 
+# See MIT-LICENSE. 
+#
+#++
+ 
 require 'active_record/tasks/database_tasks'
 require 'active_record/tasks/postgresql_database_tasks'
 
@@ -9,10 +17,6 @@ module PgTasks
   DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME = 'structure_and_data.pgbin'
 
   class << self
-
-    def reload!
-      load Rails.root.join(__FILE__)
-    end
 
     %w(data_dump data_restore).each do |method_name|
       define_method method_name  do |filename = nil|
