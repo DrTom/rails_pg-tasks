@@ -1,23 +1,21 @@
 #--
 # Copyright (c) 2015 Thomas Schank
 #
-# Released to the public under the terms of the MIT license. 
-# See MIT-LICENSE. 
+# Released to the public under the terms of the MIT license.
+# See MIT-LICENSE.
 #
 #++
- 
+
 require 'active_record/tasks/database_tasks'
 require 'active_record/tasks/postgresql_database_tasks'
 
 module PgTasks
-
   require 'pg_tasks/railtie' if defined?(Rails)
 
   DEFAULT_BINARY_DATA_FILE_NAME = 'data.pgbin'
   DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME = 'structure_and_data.pgbin'
 
   class << self
-
     %w(data_dump data_restore).each do |method_name|
       define_method method_name  do |filename = nil|
         ActiveRecord::Tasks::DatabaseTasks \
@@ -29,17 +27,17 @@ module PgTasks
 
     %w(structure_and_data_dump structure_and_data_restore).each do |method_name|
       define_method method_name  do |filename = nil|
-      ActiveRecord::Tasks::DatabaseTasks \
-        .perform_pg_db_task_for_config_and_filename \
-        method_name, current_config,
-        filename_or_default_binary_structure_and_data_file(filename)
+        ActiveRecord::Tasks::DatabaseTasks \
+          .perform_pg_db_task_for_config_and_filename \
+          method_name, current_config,
+          filename_or_default_binary_structure_and_data_file(filename)
       end
     end
 
     def truncate_tables
       ActiveRecord::Base.connection.tap do |connection|
         connection.tables.reject { |tn| tn == 'schema_migrations' }
-        .join(', ').tap do |tables|
+          .join(', ').tap do |tables|
           connection.execute " TRUNCATE TABLE #{tables} CASCADE; "
         end
       end
@@ -62,22 +60,23 @@ module PgTasks
         File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir,
                   DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME)
     end
-
   end
 end
 
 module ActiveRecord
   module Tasks
     class PostgreSQLDatabaseTasks
-
       def data_dump(filename)
         set_psql_env
         command = 'pg_dump -F c -a -T schema_migrations -x -O -f ' \
           "#{Shellwords.escape(filename)} " \
           "#{Shellwords.escape(configuration['database'])}"
-        raise 'Error during data_dump' unless Kernel.system(command)
-        $stdout.puts "The data of '#{configuration['database']} " \
-          "has been dumped to '#{filename}'"
+        unless Kernel.system(command)
+          raise 'Error during data_dump'
+        else
+          $stdout.puts "The data of '#{configuration['database']} " \
+            "has been dumped to '#{filename}'"
+        end
       end
 
       def data_restore(filename)
@@ -85,9 +84,12 @@ module ActiveRecord
         command = 'pg_restore --disable-triggers -a -x -O -d ' \
           "#{Shellwords.escape(configuration['database'])} " \
           "#{Shellwords.escape(filename)}"
-        raise 'Error during data_restore ' unless Kernel.system(command)
-        $stdout.puts "Data from '#{filename}' has been restored to \
+        unless Kernel.system(command)
+          raise 'Error during data_restore '
+        else
+          $stdout.puts "Data from '#{filename}' has been restored to \
                         '#{configuration['database']}'"
+        end
       end
 
       def structure_and_data_dump(filename)
@@ -115,7 +117,6 @@ module ActiveRecord
             "has been restored to '#{filename}'"
         end
       end
-
     end
   end
 end
@@ -123,7 +124,6 @@ end
 module ActiveRecord
   module Tasks
     module DatabaseTasks
-
       def perform_pg_db_task_for_config_and_filename(task_name, *arguments)
         configuration = arguments.first
         filename = arguments.delete_at 1
@@ -134,7 +134,6 @@ module ActiveRecord
       rescue Exception => error
         $stderr.puts error, *(error.backtrace)
       end
-
     end
   end
 end
