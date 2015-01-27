@@ -32,3 +32,8 @@ Style/SpecialGlobalVars:
 # Offense count: 4
 Style/UnlessElse:
   Enabled: false
+
+# Offense count: 1
+# Configuration parameters: CountComments.
+Metrics/MethodLength:
+  Max: 11

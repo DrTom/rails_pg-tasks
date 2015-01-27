@@ -6,7 +6,7 @@ PostgreSQL Tasks and Functions for Ruby on Rails
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'pg_tasks', '>= 1.0.0', '< 2.0.0'
+gem 'pg_tasks', '>= 1.1.0', '< 2.0.0'
 ```
 
 ## Usage
@@ -39,23 +39,22 @@ PgTasks.structure_and_data_restore(filename = nil)
 
 ## Internals and Caveats 
 
-This library uses and extends `ActiveRecord::Tasks::DatabaseTasks` as
-well as `ActiveRecord::Tasks::PostgreSQLDatabaseTasks`.
+This library uses and extends `ActiveRecord::Tasks::DatabaseTasks` as well as
+`ActiveRecord::Tasks::PostgreSQLDatabaseTasks`.
 
-The dump and restore tasks communicate with Postgresql via the system
-binaries `pg_dump` and `pg_restore` (in the same way as some of the
-original rails tasks do). `truncate_tables` uses
-`ActiveRecord::Base.connection`.
+The dump and restore tasks communicate with Postgresql via the system binaries
+`pg_dump` and `pg_restore` (in the same way as some of the original rails tasks
+do). `truncate_tables` uses `ActiveRecord::Base.connection`.
 
-Restoring a complete database doesn't play well if there are open
-connections. There will be warnings if there are conflicts during
-restore. The restore continues however.
+Restoring a complete database doesn't play well if there are open connections.
+Restore is carried out in a single transaction add will abort immediately if
+there is a problem.
 
-`data_dump` might warn you about circular dependencies. Never mind,
-`restore` disables the triggers temporarily. The role for restore
-requieres permissions to disable triggers temporarily.
+`data_dump` might warn you about circular dependencies. Never mind, `restore`
+disables the triggers temporarily. The role for restore requieres permissions
+to disable triggers temporarily.
 
-`data_dump` as well as `truncate_tables` leaves the `schema_migrations`
-table alone. This is the desired behavior for a library designed to
-interact with *ruby on rails* respectively *active record*.
+`data_dump` as well as `truncate_tables` leaves the `schema_migrations` table
+alone. This is the desired behavior for a library designed to interact with
+*ruby on rails* respectively *active record*.
 

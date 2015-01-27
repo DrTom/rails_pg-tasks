@@ -81,8 +81,9 @@ module ActiveRecord
 
       def data_restore(filename)
         set_psql_env
-        command = 'pg_restore --disable-triggers -a -x -O -d ' \
-          "#{Shellwords.escape(configuration['database'])} " \
+        command = 'pg_restore --disable-triggers ' \
+          '--single-transaction -a -x -O ' \
+          "-d #{Shellwords.escape(configuration['database'])} " \
           "#{Shellwords.escape(filename)}"
         unless Kernel.system(command)
           raise 'Error during data_restore '
@@ -107,7 +108,7 @@ module ActiveRecord
 
       def structure_and_data_restore(filename)
         set_psql_env
-        command = 'pg_restore --disable-triggers -x -O -d ' \
+        command = 'pg_restore --disable-triggers --single-transaction -x -O -d ' \
           "#{Shellwords.escape(configuration['database'])} " \
           "#{Shellwords.escape(filename)}"
         unless Kernel.system(command)
