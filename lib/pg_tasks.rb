@@ -43,6 +43,10 @@ module PgTasks
       end
     end
 
+    def terminate_connections
+      ActiveRecord::Tasks::DatabaseTasks.terminate_connections current_config
+    end
+
     private
 
     def current_config
@@ -118,6 +122,20 @@ module ActiveRecord
             "has been restored to '#{filename}'"
         end
       end
+
+      def terminate_connections
+        set_psql_env
+        database = configuration['database']
+        command = "psql -c \"SELECT pg_terminate_backend(pg_stat_activity.pid) " \
+          ' FROM pg_stat_activity ' \
+          "WHERE pg_stat_activity.datname = '#{database}' " \
+          " AND pid <> pg_backend_pid();\" '#{database}'"
+        unless Kernel.system(command)
+          raise 'Error during terminate_connections'
+        else
+          $stdout.puts "Connections to '#{database}' have been terminated."
+        end
+      end
     end
   end
 end
@@ -134,6 +152,12 @@ module ActiveRecord
         $stderr.puts "Database '#{configuration['database']}' does not exist"
       rescue Exception => error
         $stderr.puts error, *(error.backtrace)
+      end
+
+      def terminate_connections(*arguments)
+        configuration = arguments.first
+        class_for_adapter(configuration['adapter']) \
+          .new(*arguments).send :terminate_connections
       end
     end
   end

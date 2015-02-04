@@ -14,6 +14,10 @@ namespace :db do
       PgTasks.truncate_tables
     end
 
+    task terminate_connections: [:environment, :load_config] do
+      PgTasks.terminate_connections
+    end
+
     namespace :data do
       task dump: [:environment, :load_config] do
         PgTasks.data_dump ENV['FILE']

@@ -16,11 +16,12 @@ gem 'pg_tasks', '>= 1.1.0', '< 2.0.0'
 The following rake tasks are available: 
 
 ```shell
-rake db:pg:truncate_tables
 rake db:pg:data:dump FILE=...
 rake db:pg:data:restore FILE=...
 rake db:pg:structure_and_data:dump FILE=...
 rake db:pg:structure_and_data:restore FILE=...
+rake db:pg:terminate_connections
+rake db:pg:truncate_tables
 ```
 
 The meaning should be clear from the names.
@@ -30,11 +31,12 @@ The FILE environment variable is optional. There are defaults.
 ### Access from Ruby Code
 
 ```ruby
-PgTasks.truncate_tables()
 PgTasks.data_dump(filename = nil)
 PgTasks.data_restore(filename = nil)
 PgTasks.structure_and_data_dump(filename = nil)
 PgTasks.structure_and_data_restore(filename = nil)
+PgTasks.terminate_connections()
+PgTasks.truncate_tables()
 ```
 
 ## Internals and Caveats 
@@ -58,3 +60,5 @@ to disable triggers temporarily.
 alone. This is the desired behavior for a library designed to interact with
 *ruby on rails* respectively *active record*.
 
+Calling `PgTasks.terminate_connections()` will also terminate the current
+connection. 
