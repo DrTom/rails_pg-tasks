@@ -20,8 +20,8 @@ module PgTasks
       define_method method_name  do |filename = nil|
         ActiveRecord::Tasks::DatabaseTasks \
           .perform_pg_db_task_for_config_and_filename \
-          method_name,  current_config,
-          filename_or_default_binary_data_file(filename)
+            method_name,  current_config,
+            filename_or_default_binary_data_file(filename)
       end
     end
 
@@ -29,8 +29,8 @@ module PgTasks
       define_method method_name  do |filename = nil|
         ActiveRecord::Tasks::DatabaseTasks \
           .perform_pg_db_task_for_config_and_filename \
-          method_name, current_config,
-          filename_or_default_binary_structure_and_data_file(filename)
+            method_name, current_config,
+            filename_or_default_binary_structure_and_data_file(filename)
       end
     end
 
@@ -85,7 +85,7 @@ module ActiveRecord
 
       def data_restore(filename)
         set_psql_env
-        command = 'pg_restore --disable-triggers ' \
+        command = 'pg_restore --disable-triggers --exit-on-error ' \
           '--single-transaction -a -x -O ' \
           "-d #{Shellwords.escape(configuration['database'])} " \
           "#{Shellwords.escape(filename)}"
@@ -112,7 +112,8 @@ module ActiveRecord
 
       def structure_and_data_restore(filename)
         set_psql_env
-        command = 'pg_restore --disable-triggers --single-transaction -x -O -d ' \
+        command = 'pg_restore --disable-triggers --exit-on-error ' \
+          '--single-transaction -x -O -d ' \
           "#{Shellwords.escape(configuration['database'])} " \
           "#{Shellwords.escape(filename)}"
         unless Kernel.system(command)
