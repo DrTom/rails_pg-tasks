@@ -73,7 +73,7 @@ module ActiveRecord
       def data_dump(filename)
         set_psql_env
         command = 'pg_dump -F c -a -T schema_migrations -x -O -f ' \
-          "#{Shellwords.escape(filename)} " \
+          "#{Shellwords.escape(filename.to_s)} " \
           "#{Shellwords.escape(configuration['database'])}"
         unless Kernel.system(command)
           raise 'Error during data_dump'
@@ -88,7 +88,7 @@ module ActiveRecord
         command = 'pg_restore --disable-triggers --exit-on-error ' \
           '--single-transaction -a -x -O ' \
           "-d #{Shellwords.escape(configuration['database'])} " \
-          "#{Shellwords.escape(filename)}"
+          "#{Shellwords.escape(filename.to_s)}"
         unless Kernel.system(command)
           raise 'Error during data_restore '
         else
@@ -115,7 +115,7 @@ module ActiveRecord
         command = 'pg_restore --disable-triggers --exit-on-error ' \
           '--single-transaction -x -O -d ' \
           "#{Shellwords.escape(configuration['database'])} " \
-          "#{Shellwords.escape(filename)}"
+          "#{Shellwords.escape(filename.to_s)}"
         unless Kernel.system(command)
           raise 'Error during structure_and_data_restore '
         else
