@@ -17,16 +17,16 @@ module PgTasks
 
   class << self
     %w(data_dump data_restore).each do |method_name|
-      define_method method_name  do |filename = nil|
+      define_method method_name do |filename = nil|
         ActiveRecord::Tasks::DatabaseTasks \
           .perform_pg_db_task_for_config_and_filename \
-            method_name,  current_config,
+            method_name, current_config,
             filename_or_default_binary_data_file(filename)
       end
     end
 
     %w(structure_and_data_dump structure_and_data_restore).each do |method_name|
-      define_method method_name  do |filename = nil|
+      define_method method_name do |filename = nil|
         ActiveRecord::Tasks::DatabaseTasks \
           .perform_pg_db_task_for_config_and_filename \
             method_name, current_config,
