@@ -153,6 +153,7 @@ module ActiveRecord
         $stderr.puts "Database '#{configuration['database']}' does not exist"
       rescue Exception => error
         $stderr.puts error, *(error.backtrace)
+        raise error
       end
 
       def terminate_connections(*arguments)
