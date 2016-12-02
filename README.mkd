@@ -13,13 +13,12 @@ gem 'pg_tasks', '>= 1.1.0', '< 2.0.0'
 
 ### Rake Tasks
 
-The following rake tasks are available: 
+The following rake tasks are available:
 
 ```shell
-rake db:pg:data:dump FILE=...
-rake db:pg:data:restore FILE=...
 rake db:pg:structure_and_data:dump FILE=...
 rake db:pg:structure_and_data:restore FILE=...
+rake db:pg:data:restore FILE=...
 rake db:pg:terminate_connections
 rake db:pg:truncate_tables
 ```
@@ -31,15 +30,40 @@ The FILE environment variable is optional. There are defaults.
 ### Access from Ruby Code
 
 ```ruby
-PgTasks.data_dump(filename = nil)
-PgTasks.data_restore(filename = nil)
 PgTasks.structure_and_data_dump(filename = nil)
 PgTasks.structure_and_data_restore(filename = nil)
+PgTasks.data_restore(filename = nil)
 PgTasks.terminate_connections()
 PgTasks.truncate_tables()
 ```
 
-## Internals and Caveats 
+## Breaking Changes from Version 1.x to 2.x
+
+The task `db:pg:data:dump` and the corresponding command `PgTasks.data_dump`
+has been removed.
+
+The task `db:pg:data:restore` and the corresponding command
+`PgTasks.data_restore` operate now only on dumps also including the schema.
+
+The task `db:pg:data:restore` and the corresponding command
+`PgTasks.data_restore` do not disable triggers!
+
+
+### Motivation
+
+* The integrity of the data is now checked also when restoring data only.
+
+* Most use cases require now only one dump (`structure_and_data`) instead of
+    two. This translates in ½ the time to create dumps and ½ the space required
+    to store them.
+
+You might ask why it hasn't been this way from the start? The facilities
+PostgreSQL provides clashes a bit with how ActiveRecord works with respect the
+`schema_migrations` table and you have to perform "a bit of a dance" to
+make it work this way.
+
+
+## Internals and Caveats
 
 This library uses and extends `ActiveRecord::Tasks::DatabaseTasks` as well as
 `ActiveRecord::Tasks::PostgreSQLDatabaseTasks`.
@@ -52,13 +76,9 @@ Restoring a complete database doesn't play well if there are open connections.
 Restore is carried out in a single transaction add will abort immediately if
 there is a problem.
 
-`data_dump` might warn you about circular dependencies. Never mind, `restore`
-disables the triggers temporarily. The role for restore requieres permissions
-to disable triggers temporarily.
-
-`data_dump` as well as `truncate_tables` leaves the `schema_migrations` table
+`data_restore` as well as `truncate_tables` leaves the `schema_migrations` table
 alone. This is the desired behavior for a library designed to interact with
 *ruby on rails* respectively *active record*.
 
 Calling `PgTasks.terminate_connections()` will also terminate the current
-connection. 
+connection.

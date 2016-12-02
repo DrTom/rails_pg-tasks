@@ -16,7 +16,7 @@ module PgTasks
   DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME = 'structure_and_data.pgbin'
 
   class << self
-    %w(data_dump data_restore).each do |method_name|
+    %w(data_restore).each do |method_name|
       define_method method_name do |filename = nil|
         ActiveRecord::Tasks::DatabaseTasks \
           .perform_pg_db_task_for_config_and_filename \
@@ -70,30 +70,32 @@ end
 module ActiveRecord
   module Tasks
     class PostgreSQLDatabaseTasks
-      def data_dump(filename)
-        set_psql_env
-        command = 'pg_dump -F c -a -T schema_migrations -x -O -f ' \
-          "#{Shellwords.escape(filename.to_s)} " \
-          "#{Shellwords.escape(configuration['database'])}"
-        unless Kernel.system(command)
-          raise 'Error during data_dump'
-        else
-          $stdout.puts "The data of '#{configuration['database']} " \
-            "has been dumped to '#{filename}'"
-        end
-      end
 
       def data_restore(filename)
-        set_psql_env
-        command = 'pg_restore --disable-triggers --exit-on-error ' \
-          '--single-transaction -a -x -O ' \
-          "-d #{Shellwords.escape(configuration['database'])} " \
-          "#{Shellwords.escape(filename.to_s)}"
-        unless Kernel.system(command)
-          raise 'Error during data_restore '
-        else
-          $stdout.puts "Data from '#{filename}' has been restored to \
+        shell_filename= Shellwords.escape filename.to_s
+        list_cmd = "pg_restore -l #{shell_filename}"
+        pg_list = `#{list_cmd}`
+        raise "Command #{list_cmd} failed " if $?.exitstatus != 0
+        restore_list = pg_list.split(/\n/) \
+          .reject{|l| l =~ /TABLE DATA .* schema_migrations/}.join("\n")
+        begin
+          restore_list_file = Tempfile.new 'pg_restore_list'
+          restore_list_file.write restore_list
+
+          set_psql_env
+          command = 'pg_restore --data-only --exit-on-error ' \
+            ' --single-transaction --no-privileges --no-owner ' \
+            " -d #{Shellwords.escape(configuration['database'])} " \
+            " #{shell_filename }"
+          unless Kernel.system(command)
+            raise 'Error during data_restore '
+          else
+            $stdout.puts "Data from '#{filename}' has been restored to \
                         '#{configuration['database']}'"
+          end
+        ensure
+          restore_list_file.close
+          restore_list_file.unlink
         end
       end
 
