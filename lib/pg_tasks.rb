@@ -92,9 +92,10 @@ module ActiveRecord
 
           set_psql_env
           command = 'pg_restore --data-only --exit-on-error ' \
-            ' --single-transaction --no-privileges --no-owner ' \
+            ' --disable-triggers --single-transaction --no-privileges --no-owner ' \
             " -d #{Shellwords.escape(configuration['database'])} " \
-            " #{shell_filename }"
+            " --use-list=#{restore_list_file.path} " \
+            " #{shell_filename}"
           unless Kernel.system(command)
             raise 'Error during data_restore '
           else
