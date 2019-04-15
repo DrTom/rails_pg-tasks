@@ -21,11 +21,6 @@ namespace :db do
     end
 
     namespace :data do
-      desc "Call pg_dump to dump data without structure and without schema_migrations, honors ENV['FILE']"
-      task dump: [:environment, :load_config] do
-        PgTasks.data_dump ENV['FILE']
-      end
-
       desc "Call pg_restore with parameters apt to load dumps w.o. structure, honors ENV['FILE']"
       task restore: [:environment, :load_config] do
         PgTasks.data_restore ENV['FILE']
