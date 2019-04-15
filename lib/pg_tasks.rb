@@ -12,8 +12,9 @@ require 'active_record/tasks/postgresql_database_tasks'
 module PgTasks
   require 'pg_tasks/railtie' if defined?(Rails)
 
-  DEFAULT_BINARY_DATA_FILE_NAME = 'data.pgbin'
-  DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME = 'structure_and_data.pgbin'
+  DEFAULT_BINARY_DATA_FILE_NAME = 'data.pgbin'.freeze
+  DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME = 'structure_and_data.pgbin'.freeze
+  DEFAULT_SQL_STRUCTURE_AND_DATA_FILE_NAME = 'structure_and_data.sql'.freeze
 
   class << self
     %w(data_restore).each do |method_name|
@@ -25,7 +26,8 @@ module PgTasks
       end
     end
 
-    %w(structure_and_data_dump structure_and_data_restore).each do |method_name|
+    %w(structure_and_data_dump structure_and_data_dump_sql structure_and_data_restore)
+    .each do |method_name|
       define_method method_name do |filename = nil|
         ActiveRecord::Tasks::DatabaseTasks \
           .perform_pg_db_task_for_config_and_filename \
@@ -53,17 +55,23 @@ module PgTasks
       ActiveRecord::Tasks::DatabaseTasks.current_config
     end
 
+    def filename_or_default(filename, default)
+      (filename.present? && filename) \
+        || File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir, default)
+    end
+
     def filename_or_default_binary_data_file(filename)
-      (filename.present? && filename) || \
-        File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir,
-                  DEFAULT_BINARY_DATA_FILE_NAME)
+      filename_or_default(filename, DEFAULT_BINARY_DATA_FILE_NAME)
     end
 
     def filename_or_default_binary_structure_and_data_file(filename)
-      (filename.present? && filename) || \
-        File.join(ActiveRecord::Tasks::DatabaseTasks.db_dir,
-                  DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME)
+      filename_or_default(filename, DEFAULT_BINARY_STRUCTURE_AND_DATA_FILE_NAME)
     end
+
+    def filename_or_default_sql_structure_and_data_file(filename)
+      filename_or_default(filename, DEFAULT_SQL_STRUCTURE_AND_DATA_FILE_NAME)
+    end
+
   end
 end
 
@@ -99,10 +107,11 @@ module ActiveRecord
         end
       end
 
-      def structure_and_data_dump(filename)
+      def structure_and_data_dump(filename, plain_text = false)
         set_psql_env
-        command = "pg_dump -F c -x -O -f \
-        #{Shellwords.escape(filename)} \
+        command = "pg_dump -x -O \
+        -F #{plain_text ? 'p' : 'c'} \
+        -f #{Shellwords.escape(filename)} \
         #{Shellwords.escape(configuration['database'])}"
         unless Kernel.system(command)
           raise 'Error during structure_and_data_dump'
@@ -110,6 +119,10 @@ module ActiveRecord
           $stdout.puts 'Structure and data of ' \
             "'#{configuration['database']}' has been dumped to '#{filename}'"
         end
+      end
+
+      def structure_and_data_dump_sql(filename)
+        structure_and_data_dump(filename, true)
       end
 
       def structure_and_data_restore(filename)
