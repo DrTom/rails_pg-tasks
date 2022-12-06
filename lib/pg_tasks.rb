@@ -93,14 +93,14 @@ module ActiveRecord
           set_psql_env
           command = 'pg_restore --data-only --exit-on-error ' \
             ' --disable-triggers --single-transaction --no-privileges --no-owner ' \
-            " -d #{Shellwords.escape(configuration['database'])} " \
+            " -d #{Shellwords.escape(configuration_hash[:database])} " \
             " --use-list=#{restore_list_file.path} " \
             " #{shell_filename}"
           unless Kernel.system(command)
             raise 'Error during data_restore '
           else
             $stdout.puts "Data from '#{filename}' has been restored to \
-                        '#{configuration['database']}'"
+                        '#{configuration_hash[:database]}'"
           end
         ensure
           restore_list_file.close
@@ -113,12 +113,12 @@ module ActiveRecord
         command = "pg_dump -x -O \
         -F #{plain_text ? 'p' : 'c'} \
         -f #{Shellwords.escape(filename)} \
-        #{Shellwords.escape(configuration['database'])}"
+        #{Shellwords.escape(configuration_hash[:database])}"
         unless Kernel.system(command)
           raise 'Error during structure_and_data_dump'
         else
           $stdout.puts 'Structure and data of ' \
-            "'#{configuration['database']}' has been dumped to '#{filename}'"
+            "'#{configuration_hash[:database]}' has been dumped to '#{filename}'"
         end
       end
 
@@ -130,19 +130,19 @@ module ActiveRecord
         set_psql_env
         command = 'pg_restore --disable-triggers --exit-on-error ' \
           '--single-transaction -x -O -d ' \
-          "#{Shellwords.escape(configuration['database'])} " \
+          "#{Shellwords.escape(configuration_hash[:database])} " \
           "#{Shellwords.escape(filename.to_s)}"
         unless Kernel.system(command)
           raise 'Error during structure_and_data_restore '
         else
-          $stdout.puts "Structure and data of '#{configuration['database']}' " \
+          $stdout.puts "Structure and data of '#{configuration_hash[:database]}' " \
             "has been restored to '#{filename}'"
         end
       end
 
       def terminate_connections
         set_psql_env
-        database = configuration['database']
+        database = configuration_hash[:database]
         command = "psql -c \"SELECT pg_terminate_backend(pg_stat_activity.pid) " \
           ' FROM pg_stat_activity ' \
           "WHERE pg_stat_activity.datname = '#{database}' " \
@@ -162,11 +162,14 @@ module ActiveRecord
     module DatabaseTasks
       def perform_pg_db_task_for_config_and_filename(task_name, *arguments)
         configuration = arguments.first
-        filename = arguments.delete_at 1
-        class_for_adapter(configuration['adapter']) \
-          .new(*arguments).send task_name, filename
+        filename = arguments.delete_at(1)
+        hash_config =
+          ActiveRecord::DatabaseConfigurations::HashConfig.new("test", "primary", configuration)
+        class_for_adapter(hash_config.configuration_hash[:adapter])
+          .new(hash_config)
+          .send(task_name, filename)
       rescue ActiveRecord::NoDatabaseError
-        $stderr.puts "Database '#{configuration['database']}' does not exist"
+        $stderr.puts "Database '#{hash_config.configuration_hash[:database]}' does not exist"
       rescue Exception => error
         $stderr.puts error, *(error.backtrace)
         raise error
@@ -174,8 +177,9 @@ module ActiveRecord
 
       def terminate_connections(*arguments)
         configuration = arguments.first
-        class_for_adapter(configuration['adapter']) \
-          .new(*arguments).send :terminate_connections
+        hash_config =
+          ActiveRecord::DatabaseConfigurations::HashConfig.new("test", "primary", configuration)
+        class_for_adapter(hash_config.configuration_hash[:adapter]).new(hash_config).send :terminate_connections
       end
     end
   end
