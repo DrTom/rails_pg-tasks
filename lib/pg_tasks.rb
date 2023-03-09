@@ -38,7 +38,8 @@ module PgTasks
 
     def truncate_tables
       ActiveRecord::Base.connection.tap do |connection|
-        connection.tables.reject { |tn| tn == 'schema_migrations' }
+        connection.tables.reject{|tn| tn == 'schema_migrations'}
+          .reject{|tn| tn == 'ar_internal_metadata'}
           .join(', ').tap do |tables|
           connection.execute " TRUNCATE TABLE #{tables} CASCADE; "
         end
@@ -85,7 +86,9 @@ module ActiveRecord
         pg_list = `#{list_cmd}`
         raise "Command #{list_cmd} failed " if $?.exitstatus != 0
         restore_list = pg_list.split(/\n/) \
-          .reject{|l| l =~ /TABLE DATA .* schema_migrations/}.join("\n")
+          .reject{|l| l =~ /TABLE DATA .* schema_migrations/}
+          .reject{|l| l =~ /TABLE DATA .* ar_internal_metadata/}
+          .join("\n")
         begin
           restore_list_file = Tempfile.new 'pg_restore_list'
           restore_list_file.write restore_list
