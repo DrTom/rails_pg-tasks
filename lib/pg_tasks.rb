@@ -115,6 +115,7 @@ module ActiveRecord
         set_psql_env
         command = "pg_dump -x -O \
         -F #{plain_text ? 'p' : 'c'} \
+        #{plain_text ? '--inserts' : ''} \
         -f #{Shellwords.escape(filename)} \
         #{Shellwords.escape(configuration_hash[:database])}"
         unless Kernel.system(command)
